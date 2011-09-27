@@ -1,0 +1,26 @@
+--- First stanza heading - Optional. Must start with at least three dashes if provided
+
+handle=handleA # handle provides a short name for one to reference when calling connect
+ 
+# The default connect class is master. you may specify any other classes of your choosing
+# Suggest: master, slave, query, readonly etc...
+class=master
+
+
+# as you can see here, directives may be separated by either newline or semicolon
+hostname=db.host.name; database=db_A; user=db_A_user; password=db_A_password; type=Mysql 
+
+
+# This option tells DBR that this is an authoritative database which contains
+# futher DBR configuration data. DBR will attempt to connect and recurse
+# into that configuration data upon successful loading of this stanza.
+dbr_bootstrap=1
+
+
+--- Subsequent stanza headings - Heading is required if there is to be more than one stanza. Must start with at least three dashes.
+
+handle=handleB; class=master
+hostname=db.host.name; database=db_B; user=db_B_user; password=db_B_password; type=Mysql
+
+
+# and so on...
