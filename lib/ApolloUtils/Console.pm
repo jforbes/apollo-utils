@@ -24,6 +24,9 @@ my %BUTTONS = (
 	       'backspace' => KEY_BACKSPACE
 	      );
 
+my $MAX_COMMAND_LINE_POS = 29;
+my $MAX_HANDHELD_LINE_POS = 19;
+
 
 sub new {
       my $pkg = shift;
@@ -396,6 +399,7 @@ sub print{
 
       return 1;
 }
+
 sub prompt{
       my $self = shift;
       my %params = @_;
@@ -437,22 +441,82 @@ sub prompt{
 
       my $str;
 
+      # The last x position to determine whether or not to move up a row
+      my $x_last;
+      
       while (1) {
 
 	    my $c = Curses::getch($self->{window});
 	    return $self->_error('Failed to get input from console') if $c == -1;
+	    
+	    # Current x, y coordinates of screen cursor
+	    my $x;
+	    my $y;
+	    
+	    Curses::getyx($self->{window}, $y, $x);
+	    
+	    # Save these off in case 'getyx' changes them periodically
+	    my $x_static = $x;
+	    my $y_static = $y;
+	    
+	    if(!defined $x_last){
+		  $x_last = $x_static;
+	    }
 
 	    if($c eq "\n" || ($self->{rightselect} && ($c == KEY_RIGHT))){
 		  last
 	    }elsif( defined($buttoncheck{$c}) ) { # bail out if we get a good buttonpress
-		  return $buttoncheck{$c};
-	    }elsif( $c eq KEY_BACKSPACE || ord($c) == 127){
-		  $str = substr($str,0,-1);
-		  Curses::clrtoeol($self->{window});
+		  return $buttoncheck{$c};	    
+	    }elsif( $c eq KEY_BACKSPACE ){
+		  
+		  # If we received a 'backspace', we assume the user is using the command line console
+		  # and so we assume the dimensions of the screen are as such	  
+		  
+		  # At the beginning of the row, so move up one row
+		  if($x_static == 0 and $x_last == 0){			
+			Curses::move($self->{window}, $y_static - 1, $MAX_COMMAND_LINE_POS);
+		  }
+		  
+		  Curses::delch($self->{window});
+		  
+		  $x_last = $x_static;
 		  next;
-	    }elsif( length ($c) > 1 ){
+		  
+	    }elsif(ord($c) == 127){
+		  # If we received a 'delete' we assume the user is using the hand held console and
+		  # so we assume the dimensions of the screen are as such
+		  
+		  # Delete characters depending on how close we were to the edge of the screen
+		  if($x_static == 2){
+			if($y_static != 0){
+			      Curses::deleteln($self->{window});
+			      Curses::move($self->{window}, $y_static - 1, $MAX_HANDHELD_LINE_POS);	      
+			}
+			else{
+			      Curses::move($self->{window}, $y_static, 0);			      
+			}
+		  }elsif($x_static == 1){			
+			Curses::deleteln($self->{window});
+			Curses::move($self->{window}, $y_static - 1, $MAX_HANDHELD_LINE_POS - 1);						
+		  }elsif($x_static == 0){			
+			Curses::deleteln($self->{window});
+			Curses::move($self->{window}, $y_static - 1, $MAX_HANDHELD_LINE_POS - 2);						
+		  }
+		  else{
+			Curses::move($self->{window}, $y_static, $x_static - 3);			
+		  }
+		  
+		  Curses::clrtoeol($self->{window});
+		  $x_last = $x_static;
+		  next;
+		  
+	    }
+	    elsif( length ($c) > 1 ){
+		  $x_last = $x_static;
 		  next; # cheap way to detect nonprintables
 	    }
+	    
+	    $x_last = $x_static;
 
 	    $str .= $c;
 
