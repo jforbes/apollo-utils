@@ -297,9 +297,9 @@ sub _process_expression{
 	    push @outstrings, $outstring;
       }
 
-      if($mode != 2){
-	    $self->_syntax_err("Invalid expression",$firstoffset,$finaloffset);
-      }
+#      if($mode != 2){
+#	    $self->_syntax_err("Invalid expression",$firstoffset,$finaloffset);
+#      }
 
       return join('',@outstrings);
 }
